@@ -1,0 +1,14 @@
+# Java / Spring Boot
+target/
+*.log
+.idea/
+.project
+.settings/
+
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# OS files
+.DS_Store
