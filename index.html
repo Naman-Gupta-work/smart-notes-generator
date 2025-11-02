@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Notes Generator</title>
+  <style>
+    body {
+      font-family: "Poppins", sans-serif;
+      background: #f2f2f7;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      position: relative;
+      height: 100vh;
+    }
+
+    /* === Animated gradient background === */
+    .animated-bg {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(270deg, #4a90e2, #6fc3df, #fbc2eb, #a1c4fd);
+      background-size: 800% 800%;
+      animation: gradientShift 12s ease infinite;
+      z-index: 0;
+    }
+
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    /* === Floating glowing circles === */
+    .circle {
+      position: fixed;
+      border-radius: 50%;
+      opacity: 0.3;
+      animation: float 10s ease-in-out infinite;
+      z-index: 0;
+    }
+
+    .circle1 {
+      width: 200px;
+      height: 200px;
+      background: #ffffff50;
+      top: 10%;
+      left: 15%;
+      animation-delay: 0s;
+    }
+
+    .circle2 {
+      width: 150px;
+      height: 150px;
+      background: #ffffff40;
+      bottom: 15%;
+      right: 10%;
+      animation-delay: 3s;
+    }
+
+    .circle3 {
+      width: 250px;
+      height: 250px;
+      background: #ffffff30;
+      top: 50%;
+      right: 30%;
+      animation-delay: 5s;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      50% { transform: translateY(-20px) rotate(45deg); }
+    }
+
+    /* === Content box === */
+    header {
+      background: rgba(74, 144, 226, 0.9);
+      color: white;
+      padding: 1rem;
+      text-align: center;
+      font-size: 1.6rem;
+      letter-spacing: 0.5px;
+      font-weight: bold;
+      position: relative;
+      z-index: 2;
+    }
+
+    main {
+      max-width: 700px;
+      margin: 60px auto;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 2px 15px rgba(0,0,0,0.15);
+      position: relative;
+      z-index: 2;
+      backdrop-filter: blur(8px);
+    }
+
+    h2 {
+      text-align: center;
+      color: #333;
+    }
+
+    label {
+      display: block;
+      font-weight: bold;
+      margin-top: 20px;
+      color: #444;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      margin-top: 8px;
+      font-size: 1rem;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    button {
+      background: #4a90e2;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+      flex: 1;
+    }
+
+    button:hover {
+      background: #3b7cc4;
+      transform: scale(1.02);
+    }
+
+    #downloadBtn {
+      background: #2ecc71;
+    }
+
+    #downloadBtn:hover {
+      background: #27ae60;
+    }
+
+    #summary-box {
+      background: #f9f9f9;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 15px;
+      margin-top: 20px;
+      min-height: 100px;
+      color: #333;
+      white-space: pre-wrap;
+      transition: all 0.4s ease-in-out;
+    }
+
+    footer {
+      text-align: center;
+      padding: 15px;
+      color: #555;
+      margin-top: 40px;
+      position: relative;
+      z-index: 2;
+    }
+  </style>
+</head>
+<body>
+  <div class="animated-bg"></div>
+  <div class="circle circle1"></div>
+  <div class="circle circle2"></div>
+  <div class="circle circle3"></div>
+
+  <header>Smart Notes Generator</header>
+
+  <main>
+    <h2>Generate Smart Notes from Video</h2>
+    <label for="videoUrl">Enter YouTube Video URL:</label>
+    <input id="videoUrl" type="text" placeholder="https://www.youtube.com/watch?v=..." />
+
+    <div class="button-group">
+      <button onclick="generateNotes()">Generate Notes</button>
+      <button id="downloadBtn" onclick="downloadPDF()" disabled>Download PDF</button>
+    </div>
+
+    <div id="summary-box">Your generated notes will appear here...</div>
+  </main>
+
+  <footer>© 2025 Smart Notes Generator</footer>
+
+  <!-- jsPDF for PDF download -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <script>
+    async function generateNotes() {
+      const url = document.getElementById("videoUrl").value.trim();
+      const summaryBox = document.getElementById("summary-box");
+      const downloadBtn = document.getElementById("downloadBtn");
+
+      if (!url) {
+        summaryBox.innerText = "⚠️ Please enter a valid video URL!";
+        downloadBtn.disabled = true;
+        return;
+      }
+
+      summaryBox.innerText = "⏳ Generating notes, please wait...";
+      downloadBtn.disabled = true;
+
+      try {
+        const response = await fetch("http://localhost:8080/api/summarize", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url })
+        });
+
+        const data = await response.json();
+        summaryBox.innerText = data.summary || "No summary returned.";
+        downloadBtn.disabled = false;
+      } catch (error) {
+        summaryBox.innerText = "❌ Failed to connect to backend.";
+        console.error(error);
+        downloadBtn.disabled = true;
+      }
+    }
+
+    function downloadPDF() {
+      const { jsPDF } = window.jspdf;
+      const summary = document.getElementById("summary-box").innerText;
+
+      if (!summary || summary.startsWith("⚠️") || summary.startsWith("⏳") || summary.startsWith("❌")) {
+        alert("Please generate a valid summary before downloading.");
+        return;
+      }
+
+      const doc = new jsPDF();
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(18);
+      doc.text("Smart Notes Summary", 20, 20);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(12);
+      const textLines = doc.splitTextToSize(summary, 170);
+      doc.text(textLines, 20, 35);
+
+      doc.save("Smart_Notes_Summary.pdf");
+    }
+  </script>
+</body>
+</html>
